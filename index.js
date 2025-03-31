@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const userRoutes = require("./routes/userRoutes");
+const medicineRoutes = require("./routes/medicineRoutes");
 
 const app = express();
 
@@ -18,6 +19,7 @@ mongoose.connect("mongodb+srv://nithiyaprabhar:nithiya2005@cluster0.a02jqzo.mong
   .catch(err => console.error("MongoDB Connection Error:", err));
 
   app.use("/api/user", userRoutes);
+  app.use("/api/medicine", medicineRoutes);
 
 
 
