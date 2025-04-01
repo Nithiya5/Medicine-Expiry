@@ -27,6 +27,7 @@ const sendOrderConfirmationEmail = async (email, name, medicineName, quantity) =
     console.log(`Order confirmation email sent to ${email}`);
   } catch (error) {
     console.error('Error sending order confirmation email:', error);
+    console.log(process.env.EMAIL_USER) ;
   }
 };
 
