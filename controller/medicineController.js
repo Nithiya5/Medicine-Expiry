@@ -3,15 +3,20 @@ const Medicine = require('../models/medicineModel');
 
 const router = express.Router();
 
-const addMedicine =  async (req, res) => {
+const addMedicine = async (req, res) => {
   try {
-    const medicine = new Medicine(req.body);
+    const imageUrl = req.file?.path; 
+    const medicine = new Medicine({
+      ...req.body,
+      imageUrl
+    });
     await medicine.save();
     res.status(201).json(medicine);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
+
 
 const getAllMedicine = async (req, res) => {
   try {
