@@ -59,9 +59,14 @@ const login = async (req, res) => {
             { expiresIn: '1d' }
           );
 
-        res.status(200).json({
+        
+          res.status(200).json({
             token,
-            role: user.role
+            user: {
+                _id: user._id,
+                userName: user.userName,
+                email: user.email
+            }
         });
     } catch (err) {
         console.error(err);
