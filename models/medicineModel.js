@@ -7,6 +7,14 @@ const medicineSchema = new mongoose.Schema({
   chemicalContent: { type: String, required: true },
   quantity: { type: Number, required: true, min: 1 },
   drugLicense: { type: String, required: true, trim: true },
+  userId: { 
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: 'User' 
+  },
+  category: {
+    type:String,required : true
+  },
   imageUrl: { type: String }, 
 }, {
   timestamps: true
