@@ -15,14 +15,13 @@ cloudinary.config({
 });
 
 const storage = multer.memoryStorage();
-const upload = multer({ storage }).single('image');
+const upload = multer({ storage }).single('file');
+
 
 
 
 const addMedicine = async (req, res) => {
   const { userId } = req.params;  // Get userId from params
-  const { name, expiryDate, manufactureDate, chemicalContent, quantity, drugLicense, category } = req.body;
-
   upload(req, res, async (err) => {
     if (err) {
       console.error('Multer error:', err);
@@ -47,26 +46,19 @@ const addMedicine = async (req, res) => {
 
       // Create and save medicine
       const medicine = new Medicine({
-        name,
-        expiryDate,
-        manufactureDate,
-        chemicalContent,
-        quantity,
-        drugLicense,
-        userId, // Use userId from params
-        category,
-        imageUrl: cloudinaryResponse.secure_url
+        ...req.body,  // Spread the request body to include all fields
+        userId,  // Add userId
+        imageUrl: cloudinaryResponse.secure_url  // Add the image URL
       });
 
       await medicine.save();
       res.status(201).json(medicine);
     } catch (error) {
-      console.error('Error adding medicine:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      console.error('Error adding medicine:', error);  // Log the error details
+      res.status(500).json({ error: 'Internal server error', details: error.message });  // Include error details in the response
     }
   });
 };
-
 
 
 const getMedicineByCategory = async(req, res) => {
