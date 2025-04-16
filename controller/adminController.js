@@ -96,6 +96,75 @@ const getApprovedMedicines = async (req, res) => {
   }
 };
 
+const getApprovedOrders = async (req, res) => {
+  try {
+    const approvedOrders = await Order.find({ status: 'Approved' })
+      .populate('medicineId')
+      .populate('userId')
+      .sort({ createdAt: -1 });
+    res.status(200).json(approvedOrders);
+  } catch (error) {
+    console.error('Error fetching approved orders:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Get all orders with status "Pending"
+const getPendingOrders = async (req, res) => {
+  try {
+    const pendingOrders = await Order.find({ status: 'Pending' })
+      .populate('medicineId')
+      .populate('userId')
+      .sort({ createdAt: -1 });
+    res.status(200).json(pendingOrders);
+  } catch (error) {
+    console.error('Error fetching pending orders:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+const getAllOrders = async (req, res) => {
+  try {
+    // Optionally populate related fields like medicineId and userId if needed
+    const orders = await Order.find()
+      .populate('medicineId')
+      .populate('userId')
+      .sort({ createdAt: -1 });
+    res.status(200).json(orders);
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Assign a delivery agent to an order and update its status
+const assignDeliveryAgent = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { deliveryAgentId } = req.body;
+
+    if (!deliveryAgentId) {
+      return res.status(400).json({ message: 'Delivery Agent ID is required' });
+    }
+
+    // Update the order by assigning the delivery agent and updating the status
+    const updatedOrder = await Order.findByIdAndUpdate(
+      orderId,
+      { deliveryAgentId, status: 'Approved' },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedOrder) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    res.status(200).json({ message: 'Delivery agent assigned successfully', order: updatedOrder });
+  } catch (error) {
+    console.error('Error updating order:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 module.exports = {
   getPendingMedicines,
   approveMedicine,

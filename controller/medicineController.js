@@ -1,5 +1,7 @@
 const express = require('express');
 const Medicine = require('../models/medicineModel');
+const Cart = require('../models/cartModel');
+const Order = require('../models/orderModel');
 // const authMiddleware = require('../middleware/auth'); 
 
 const router = express.Router();
@@ -195,4 +197,101 @@ const deleteById = async (req, res) => {
   }
 };
 
-module.exports = {addMedicine, getAllMedicine,getOneMedicine,updateMedicine,deleteById,getMedicinesByUser,getMedicineByCategory};
+const addToCart = async (req, res) => {
+  try {
+    const { userId, medicineId } = req.body;
+
+    // Check if the medicine exists
+    const medicine = await Medicine.findById(medicineId);
+    if (!medicine) {
+      return res.status(404).json({ message: 'Medicine not found' });
+    }
+
+    // Check if the user has already added the medicine to the cart
+    const existingCartItem = await Cart.findOne({ userId, medicineId });
+    if (existingCartItem) {
+      return res.status(400).json({ message: 'Medicine already in the cart' });
+    }
+
+    // Add the medicine to the cart with quantity 1
+    const newCartItem = new Cart({
+      userId,
+      medicineId,
+      quantity: 1
+    });
+
+    await newCartItem.save();
+    res.status(201).json(newCartItem);
+  } catch (error) {
+    console.error('Error adding to cart:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const removeFromCart = async (req, res) => {
+  const { userId, medicineId } = req.params;
+
+  try {
+    // Attempt to find and delete the cart item for the given user and medicine
+    const removedItem = await Cart.findOneAndDelete({ userId, medicineId });
+
+    if (!removedItem) {
+      return res.status(404).json({ message: "Cart item not found" });
+    }
+
+    res.status(200).json({ message: "Item removed from cart successfully" });
+  } catch (error) {
+    console.error("Error removing item from cart:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+};
+
+const placeOrder = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const cartItems = await Cart.find({ userId });
+
+    if (cartItems.length === 0) {
+      return res.status(400).json({ message: 'Your cart is empty' });
+    }
+
+    // Validate quantities against available stock
+    for (const cartItem of cartItems) {
+      const medicine = await Medicine.findById(cartItem.medicineId);
+      if (!medicine) {
+        return res.status(404).json({ message: 'Medicine not found' });
+      }
+
+      if (cartItem.quantity > medicine.quantity) {
+        return res.status(400).json({
+          message: `Not enough stock for ${medicine.name}. Available: ${medicine.quantity}`
+        });
+      }
+    }
+
+    // Create the order with 'Pending' status
+    const orders = cartItems.map(cartItem => ({
+      userId,
+      medicineId: cartItem.medicineId,
+      medicineName: cartItem.medicine.name,
+      quantity: cartItem.quantity,
+      status: 'Pending',
+      name: req.body.name,
+      phoneNo: req.body.phoneNo,
+      email: req.body.email,
+      address: req.body.address
+    }));
+
+    const createdOrders = await Order.insertMany(orders);
+
+    // Clear the cart after placing the order
+    await Cart.deleteMany({ userId });
+
+    res.status(201).json({ message: 'Order placed successfully', orders: createdOrders });
+  } catch (error) {
+    console.error('Error placing order:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+module.exports = {addMedicine, getAllMedicine,getOneMedicine,updateMedicine,deleteById,getMedicinesByUser,getMedicineByCategory,addToCart,removeFromCart,placeOrder};

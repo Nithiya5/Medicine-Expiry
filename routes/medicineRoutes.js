@@ -20,7 +20,6 @@ router.get('/donorMedicine/:userId', auth, getMedicinesByUser);
 router.get('/categoryMedicine',auth,getMedicineByCategory); 
 
 router.put('/update/:id', auth,upload,updateMedicine);
-// router.put('/update/:id', upload.single('file'), updateMedicine);
 
 router.delete('/delete/:id',auth, deleteById);
 
