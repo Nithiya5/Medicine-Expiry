@@ -117,18 +117,70 @@ const getMedicinesByUser = async (req, res) => {
 };
 
 
-
-const updateMedicine =  async (req, res) => {
+const updateMedicine = async (req, res) => {
   try {
-    const medicine = await Medicine.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    if (!medicine) {
+    const { name, expiryDate, manufactureDate, chemicalContent, quantity, drugLicense, category } = req.body;
+
+    const updateFields = {
+      name,
+      expiryDate,
+      manufactureDate,
+      chemicalContent,
+      quantity,
+      drugLicense,
+      category,
+    };
+
+    // Log incoming fields for debugging
+    console.log("Received fields:", updateFields);
+
+    // Check if the file is uploaded
+    if (req.file && req.file.buffer) {
+      const streamUpload = () => {
+        return new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            (error, result) => {
+              if (result) {
+                resolve(result);
+              } else {
+                reject(error);
+              }
+            }
+          );
+          streamifier.createReadStream(req.file.buffer).pipe(stream);
+        });
+      };
+    
+      const result = await streamUpload();
+      updateFields.imageUrl = result.secure_url;
+    } else if (req.file) {
+      // Debug this if buffer is missing
+      console.log("req.file exists, but buffer is missing:", req.file);
+      return res.status(400).json({ message: 'Uploaded file is invalid or corrupted' });
+    }
+
+    // Attempt to update the medicine in the database
+    const updatedMedicine = await Medicine.findByIdAndUpdate(
+      req.params.id,
+      updateFields,
+      { new: true, runValidators: true }
+    );
+
+    // Check if the medicine was found and updated
+    if (!updatedMedicine) {
+      console.log(`Medicine not found with id: ${req.params.id}`); // Log the error
       return res.status(404).json({ message: 'Medicine not found' });
     }
-    res.json(medicine);
+
+    console.log("Updated medicine:", updatedMedicine); // Log the updated medicine data for debugging
+    res.json(updatedMedicine);
   } catch (error) {
+    // Log the error for debugging
+    console.error('Update error:', error);
     res.status(400).json({ error: error.message });
   }
 };
+
 
 const deleteById = async (req, res) => {
   try {
