@@ -1,0 +1,20 @@
+const mongoose = require('mongoose');
+
+const AdminSchema = new mongoose.Schema({
+    _id: {
+        type: String,
+        default: uuidv4,
+      },
+  email: { 
+    type: String, 
+    required: true, 
+    unique: true 
+  },
+  password: {
+    type: String,
+    required: true,
+  },
+  
+});
+
+module.exports = mongoose.model('Admin', AdminSchema);

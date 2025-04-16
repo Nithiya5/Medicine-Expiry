@@ -5,7 +5,8 @@ const cors = require("cors");
 const userRoutes = require("./routes/userRoutes");
 const medicineRoutes = require("./routes/medicineRoutes");
 const orderRoutes = require("./routes/orderRoutes");
-
+const adminRoutes = require("./routes/adminRoutes");
+const deliveryAgentRoutes = require("./routes/deliveryAgentRoutes");
 
 const app = express();
 
@@ -23,6 +24,8 @@ mongoose.connect("mongodb+srv://nithiyaprabhar:nithiya2005@cluster0.a02jqzo.mong
 app.use("/api/user", userRoutes);
 app.use("/api/medicine", medicineRoutes);
 app.use("/api/order", orderRoutes); 
+app.use("/api/admin", adminRoutes);
+app.use("/api/deliveryAgent", deliveryAgentRoutes);
 
 const PORT = process.env.PORT || 7000;
 app.listen(PORT, () => {

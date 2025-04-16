@@ -61,24 +61,20 @@ const addMedicine = async (req, res) => {
 };
 
 
-const getMedicineByCategory = async(req, res) => {
+const getMedicineByCategory = async (req, res) => {
   try {
     const { category, userIdToExclude } = req.query;
-    const filter = {};
+    const filter = { status: 'Approved' }; // Only approved medicines
 
-    // Filter by category if provided
     if (category) {
       filter.category = category;
     }
 
-    // Exclude medicines associated with the specified userId
     if (userIdToExclude) {
       filter.userId = { $ne: userIdToExclude };
     }
 
-    // Fetch medicines from the database
     const medicines = await Medicine.find(filter);
-
     res.status(200).json(medicines);
   } catch (error) {
     console.error('Error occurred while fetching medicines:', error);
@@ -97,14 +93,19 @@ const getAllMedicine = async (req, res) => {
 
 const getOneMedicine = async (req, res) => {
   try {
-    const medicine = await Medicine.findById(req.params.id);
+    const medicine = await Medicine.findOne({
+      _id: req.params.id,
+      status: 'Approved'
+    });
+
     if (!medicine) {
-      return res.status(404).json({ message: 'Medicine not found' });
+      return res.status(404).json({ message: 'Medicine not found or not approved yet' });
     }
+
     res.json(medicine);
   } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+    res.status(500).json({ error: error.message });
+  }
 };
 
 const getMedicinesByUser = async (req, res) => {
@@ -129,6 +130,7 @@ const updateMedicine = async (req, res) => {
       quantity,
       drugLicense,
       category,
+      status: 'Pending',  // Set the status to 'Pending' for re-verification
     };
 
     // Log incoming fields for debugging
@@ -180,7 +182,6 @@ const updateMedicine = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
-
 
 const deleteById = async (req, res) => {
   try {
