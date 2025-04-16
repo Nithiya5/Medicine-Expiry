@@ -2,6 +2,10 @@ const DeliveryAgent = require('../models/deliveryAgentModel');
 const cloudinary = require('cloudinary').v2;
 const streamifier = require('streamifier');
 const multer = require('multer');
+const Order = require('../models/orderModel');
+const nodemailer = require('nodemailer');
+
+
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -78,6 +82,118 @@ const addDeliveryAgent = async (req, res) => {
   });
 };
 
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+const sendEmail = async (to, subject, text) => {
+  const mailOptions = { from: process.env.GMAIL_USER, to, subject, text };
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✔ Email sent: ${info.response}`);
+    return info;
+  } catch (err) {
+    console.error('✖ Email error:', err);
+    throw err;
+  }
+};
+
+const adminEmail = process.env.EMAIL_USER || 'admin@example.com';
+
+const acceptOrder = async (req, res) => {
+  try {
+    const { agentId, orderId } = req.body;
+
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    if (order.deliveryAgentId.toString() !== agentId)
+      return res.status(403).json({ message: 'Not authorized for this order' });
+
+    order.status = 'Approved';
+    await order.save();
+
+    // Notify user
+    await sendEmail(
+      order.email,
+      'Your Order Is On The Way',
+      `Hi ${order.name},\n\nYour order #${orderId} has been accepted by our delivery agent and is on the way.\n\nThank you for shopping with us.`
+    );
+
+    // Notify admin
+    await sendEmail(
+      adminEmail,
+      'Order Accepted by Delivery Agent',
+      `Order #${orderId} has been accepted by agent ID ${agentId}.`
+    );
+
+    res.status(200).json({ message: 'Order accepted, notifications sent' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error accepting order', error: err.message });
+  }
+};
+
+const rejectOrder = async (req, res) => {
+  try {
+    const { agentId, orderId, reason } = req.body;
+
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    if (order.deliveryAgentId.toString() !== agentId)
+      return res.status(403).json({ message: 'Not authorized for this order' });
+
+    order.status = 'Rejected';
+    order.deliveryAgentId = null;
+    await order.save();
+
+    // Notify admin with reason
+    await sendEmail(
+      adminEmail,
+      'Order Rejected by Delivery Agent',
+      `Order #${orderId} was rejected by agent ID ${agentId}.\nReason: ${reason}\n\nPlease reassign to another agent.`
+    );
+
+    res.status(200).json({ message: 'Order rejected and admin notified' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error rejecting order', error: err.message });
+  }
+};
+
+const confirmDelivery = async (req, res) => {
+  try {
+    const { agentId, orderId } = req.body;
+
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    if (order.deliveryAgentId.toString() !== agentId)
+      return res.status(403).json({ message: 'Not authorized for this order' });
+
+    // Generate front‑end confirmation link
+    const confirmationLink = `${process.env.APP_URL}/confirm-delivery/${orderId}`;
+
+    await sendEmail(
+      order.email,
+      'Please Confirm Your Delivery',
+      `Hi ${order.name},\n\nYour delivery is marked as delivered by our agent.\nPlease confirm receipt by clicking the link below:\n\n${confirmationLink}\n\nThank you!`
+    );
+
+    res.status(200).json({ message: 'Confirmation email sent to user' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error sending confirmation email', error: err.message });
+  }
+};
+
+
+
 module.exports = {
-  addDeliveryAgent
+  addDeliveryAgent,
+  acceptOrder,
+  rejectOrder,
+  confirmDelivery,
 };

@@ -1,6 +1,8 @@
 const User = require("../models/userModel");
 const bcrypt=require("bcryptjs");
-const jwt= require("jsonwebtoken")
+const jwt= require("jsonwebtoken");
+const nodemailer = require('nodemailer');
+const Order = require("../models/orderModel");
 
 const register = async (req, res) => {
     try {
@@ -74,5 +76,53 @@ const login = async (req, res) => {
     }
 };
 
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
+  
+  const sendEmail = async (to, subject, text) => {
+    const mailOptions = { from: process.env.GMAIL_USER, to, subject, text };
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`✔ Email sent: ${info.response}`);
+      return info;
+    } catch (err) {
+      console.error('✖ Email error:', err);
+      throw err;
+    }
+  };
 
-module.exports={register , login};
+
+
+
+const adminEmail = process.env.EMAIL_USER || 'admin@example.com';
+
+const confirmDelivery = async(req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).send('Invalid Order ID');
+
+    order.status = 'Delivered';
+    await order.save();
+
+    // Notify admin
+    await sendEmail(
+      adminEmail,
+      'Order Delivered Successfully',
+      `Order #${orderId} has been confirmed delivered by the user.`
+    );
+
+    res.send('Thank you! Your delivery has been confirmed.');
+  } catch (err) {
+    res.status(500).send('Error confirming delivery');
+  }
+};
+
+
+
+module.exports={register , login,confirmDelivery};

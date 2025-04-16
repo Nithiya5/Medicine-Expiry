@@ -93,7 +93,7 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Pending', 'Approved', 'Rejected', 'Delivered'],
+    enum: ['Pending', 'Approved', 'Rejected', 'Delivered','Assigned'],
     default: 'Pending'
   }
 }, { timestamps: true });

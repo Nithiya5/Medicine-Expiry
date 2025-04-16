@@ -1,31 +1,49 @@
 const jwt = require('jsonwebtoken');
+const Admin = require('../models/adminModel'); 
+const bcrypt = require('bcrypt');
+const DeliveryAgent = require('../models/deliveryAgentModel');
+const nodemailer = require('nodemailer'); 
+const Order = require('../models/orderModel'); 
 
- 
 const adminLogin = async (req, res) => {
-  const { email, password } = req.body;
-
-  try {
-    if (email !== process.env.DEFAULT_ADMIN_EMAIL || password !== process.env.DEFAULT_ADMIN_PASSWORD) {
-      return res.status(401).json({ message: "Invalid email or password" });
+    const { id, email, password } = req.body;
+  
+    try {
+      // Find the admin by ID
+      const admin = await Admin.findById(id);
+      if (!admin) {
+        return res.status(404).json({ message: "Admin not found" });
+      }
+  
+      // Check if the provided email matches the one in the record
+      if (admin.email !== email) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+  
+      // Compare the provided password with the hashed password stored in DB
+      const isMatch = await bcrypt.compare(password, admin.password);
+      if (!isMatch) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+  
+      // Create a JWT token
+      const token = jwt.sign(
+        { id: admin._id, email: admin.email },
+        process.env.JWT_SECRET,
+        { expiresIn: '1d' }
+      );
+  
+      res.status(200).json({
+        message: "Login successful",
+        token,
+        adminEmail: admin.email,
+      });
+  
+    } catch (error) {
+      console.error("Admin login error:", error);
+      res.status(500).json({ message: "Server error" });
     }
-
-    const token = jwt.sign(
-      { email },
-      process.env.JWT_SECRET,
-      { expiresIn: '1d' }
-    );
-
-    res.status(200).json({
-      message: "Login successful",
-      token,
-      adminEmail: email,
-    });
-
-  } catch (error) {
-    console.error("Admin login error:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
+  };
 
 
 const Medicine = require('../models/medicineModel');
@@ -165,11 +183,160 @@ const assignDeliveryAgent = async (req, res) => {
   }
 };
 
+
+// Nodemailer transporter setup
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+// Utility function to send emails
+const sendEmail = async (recipient, subject, message) => {
+  const mailOptions = {
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+    to: recipient,
+    subject,
+    text: message
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Email sent to ${recipient}`);
+  } catch (error) {
+    console.error('Error sending email:', error);
+    throw error;
+  }
+};
+
+// View pending applications
+const viewDeliveryAgentApplications = async (req, res) => {
+  try {
+    const applications = await DeliveryAgent.find({ status: 'pending' });
+    res.status(200).json(applications);
+  } catch (error) {
+    console.error("Error fetching delivery agent applications:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+};
+
+// Approve application and email credentials
+const approveDeliveryAgentApplication = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const agent = await DeliveryAgent.findById(id);
+
+    if (!agent) {
+      return res.status(404).json({ message: 'Delivery agent application not found' });
+    }
+
+    agent.status = 'approved';
+    const generatedPassword = Math.random().toString(36).slice(-8);
+    const hashedPassword = await bcrypt.hash(generatedPassword, 10);
+    agent.password = hashedPassword;
+
+    await agent.save();
+
+    const loginUrl = process.env.DELIVERY_AGENT_LOGIN_URL || "http://yourwebsite.com/delivery-agent/login";
+    const subject = "Delivery Agent Application Approved";
+    const message = `Hello ${agent.fullName},
+
+Your application has been approved.
+
+Login credentials:
+Login URL: ${loginUrl}
+Email: ${agent.email}
+Password: ${generatedPassword}
+
+Please log in and update your profile.
+
+Thank you.`;
+
+    await sendEmail(agent.email, subject, message);
+
+    res.status(200).json({ message: "Application approved and credentials sent.", agent });
+  } catch (error) {
+    console.error("Error approving application:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+};
+
+// Reject application and delete the record
+const rejectDeliveryAgentApplication = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const agent = await DeliveryAgent.findById(id);
+
+    if (!agent) {
+      return res.status(404).json({ message: 'Delivery agent application not found' });
+    }
+
+    const subject = "Delivery Agent Application Rejected";
+    const message = `Hello ${agent.fullName},
+
+We regret to inform you that your delivery agent application has been rejected.
+
+Thank you for your interest.`;
+
+    await sendEmail(agent.email, subject, message);
+    await DeliveryAgent.findByIdAndDelete(id);
+
+    res.status(200).json({ message: "Application rejected, notification sent, and record deleted." });
+  } catch (error) {
+    console.error("Error rejecting application:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+};
+
+const adminEmail = process.env.EMAIL_USER || 'admin@example.com';
+
+const assignOrderToAgent = async (req, res) => {
+  try {
+    const { orderId, agentId } = req.body;
+
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    const agent = await DeliveryAgent.findById(agentId);
+    if (!agent || agent.status !== 'approved') {
+      return res.status(400).json({ message: 'Invalid or unapproved delivery agent' });
+    }
+
+    order.deliveryAgentId = agentId;
+    order.status = 'Assigned';
+    await order.save();
+
+    agent.assignedOrders.push(orderId);
+    await agent.save();
+
+    // Notify agent
+    await sendEmail(
+      process.env.EMAIL_USER,
+      'New Order Assigned',
+      `Hello ${agent.fullName},\n\nYou have been assigned Order #${orderId}. Please log into your portal to view details.\n\nThanks.`
+    );
+
+    res.status(200).json({ message: 'Order assigned and agent notified' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error assigning order', error: err.message });
+  }
+};
+
 module.exports = {
   getPendingMedicines,
   approveMedicine,
   rejectMedicine,
   getApprovedMedicines,
-  adminLogin
+  adminLogin,
+  getApprovedOrders,
+  getPendingOrders,
+    getAllOrders,
+    assignDeliveryAgent,
+    viewDeliveryAgentApplications,
+    approveDeliveryAgentApplication,
+    rejectDeliveryAgentApplication,
+    assignOrderToAgent
 };
 
