@@ -1,21 +1,21 @@
 const express = require('express');
 const {adminLogin,getApprovedMedicines,getPendingMedicines,rejectMedicine,approveMedicine,getAllOrders,getApprovedOrders,getPendingOrders,assignDeliveryAgent,viewDeliveryAgentApplications,approveDeliveryAgentApplication,rejectDeliveryAgentApplication } = require('../controller/adminController');
-const adminAuth = require('../middleware/adminAuth');
+const auth = require('../middleware/auth');
 
 
 const router = express.Router();
 
 router.post('/login', adminLogin);
-router.get('/medicines/pending',adminAuth, getPendingMedicines);
-router.put('/medicines/approve/:id',adminAuth, approveMedicine);
-router.delete('/medicines/reject/:id',adminAuth, rejectMedicine);
-router.get('/medicines/approved',adminAuth, getApprovedMedicines);
-router.get('/orders/approved',adminAuth, getApprovedOrders);
-router.get('/orders/pending',adminAuth, getPendingOrders);
-router.put('/orders/assign/:orderId',adminAuth, assignDeliveryAgent);
-router.get('/orders/all',adminAuth, getAllOrders);
-router.get('/deliveryAgent/applications',adminAuth, viewDeliveryAgentApplications);
-router.post('/applications/:id/approve', adminAuth,approveDeliveryAgentApplication);
-router.post('/applications/:id/reject',adminAuth, rejectDeliveryAgentApplication);
+router.get('/medicines/pending',auth(['admin']), getPendingMedicines);
+router.put('/medicines/approve/:id',auth(['admin']), approveMedicine);
+router.delete('/medicines/reject/:id',auth(['admin']), rejectMedicine);
+router.get('/medicines/approved',auth(['admin']), getApprovedMedicines);
+router.get('/orders/approved',auth(['admin']), getApprovedOrders);
+router.get('/orders/pending',auth(['admin']), getPendingOrders);
+router.put('/orders/assign/:orderId',auth(['admin']), assignDeliveryAgent);
+router.get('/orders/all',auth(['admin']), getAllOrders);
+router.get('/deliveryAgent/applications',auth(['admin']), viewDeliveryAgentApplications);
+router.post('/applications/:id/approve', auth(['admin']),approveDeliveryAgentApplication);
+router.post('/applications/:id/reject',auth(['admin']), rejectDeliveryAgentApplication);
 
 module.exports = router;

@@ -4,6 +4,7 @@ const streamifier = require('streamifier');
 const multer = require('multer');
 const Order = require('../models/orderModel');
 const nodemailer = require('nodemailer');
+const User = require('../models/userModel');
 
 
 
@@ -31,6 +32,57 @@ const streamUpload = (buffer) => {
   });
 };
 
+// const addDeliveryAgent = async (req, res) => {
+//   upload(req, res, async (err) => {
+//     if (err) {
+//       console.error('Multer error:', err);
+//       return res.status(400).json({ error: 'File upload error' });
+//     }
+
+//     try {
+//       const {
+//         fullName,
+//         email,
+//         phone,
+//         address,
+//         licenseNumber,
+//         vehicleType,
+//         registrationNumber
+//       } = req.body;
+
+//       const profileBuffer = req.files['profilePhoto']?.[0]?.buffer;
+//       const licenseBuffer = req.files['licensePhoto']?.[0]?.buffer;
+
+//       if (!profileBuffer || !licenseBuffer) {
+//         return res.status(400).json({ error: 'Both profile and license photos are required.' });
+//       }
+
+//       const profilePhotoUrl = await streamUpload(profileBuffer);
+//       const licensePhotoUrl = await streamUpload(licenseBuffer);
+
+//       const newAgent = new DeliveryAgent({
+//         fullName,
+//         email,
+//         phone,
+//         address,
+//         licenseNumber,
+//         licensePhotoUrl,
+//         profilePhotoUrl,
+//         vehicle: {
+//           type: vehicleType,
+//           registrationNumber,
+//         },
+//       });
+
+//       await newAgent.save();
+//       res.status(201).json({ message: 'Application submitted successfully', agentId: newAgent._id });
+//     } catch (error) {
+//       console.error('Error applying as delivery agent:', error);
+//       res.status(500).json({ error: 'Internal server error', details: error.message });
+//     }
+//   });
+// };
+
 const addDeliveryAgent = async (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
@@ -49,6 +101,19 @@ const addDeliveryAgent = async (req, res) => {
         registrationNumber
       } = req.body;
 
+      // 1. Check if email already exists in User model
+      const userWithEmail = await User.findOne({ email });
+      if (userWithEmail) {
+        return res.status(400).json({ error: 'Email already registered as a user' });
+      }
+
+      // 2. Check if email already exists in DeliveryAgent model
+      const existingAgent = await DeliveryAgent.findOne({ email });
+      if (existingAgent) {
+        return res.status(400).json({ error: 'Email already used by another delivery agent' });
+      }
+
+      // 3. Get uploaded images
       const profileBuffer = req.files['profilePhoto']?.[0]?.buffer;
       const licenseBuffer = req.files['licensePhoto']?.[0]?.buffer;
 
@@ -59,6 +124,7 @@ const addDeliveryAgent = async (req, res) => {
       const profilePhotoUrl = await streamUpload(profileBuffer);
       const licensePhotoUrl = await streamUpload(licenseBuffer);
 
+      // 4. Create new delivery agent
       const newAgent = new DeliveryAgent({
         fullName,
         email,
@@ -67,6 +133,7 @@ const addDeliveryAgent = async (req, res) => {
         licenseNumber,
         licensePhotoUrl,
         profilePhotoUrl,
+        role: 'deliveryAgent', // Explicitly set role
         vehicle: {
           type: vehicleType,
           registrationNumber,

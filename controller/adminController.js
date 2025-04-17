@@ -5,45 +5,45 @@ const DeliveryAgent = require('../models/deliveryAgentModel');
 const nodemailer = require('nodemailer'); 
 const Order = require('../models/orderModel'); 
 
-const adminLogin = async (req, res) => {
-    const { id, email, password } = req.body;
+// const adminLogin = async (req, res) => {
+//     const { id, email, password } = req.body;
   
-    try {
-      // Find the admin by ID
-      const admin = await Admin.findById(id);
-      if (!admin) {
-        return res.status(404).json({ message: "Admin not found" });
-      }
+//     try {
+//       // Find the admin by ID
+//       const admin = await Admin.findById(id);
+//       if (!admin) {
+//         return res.status(404).json({ message: "Admin not found" });
+//       }
   
-      // Check if the provided email matches the one in the record
-      if (admin.email !== email) {
-        return res.status(401).json({ message: "Invalid email or password" });
-      }
+//       // Check if the provided email matches the one in the record
+//       if (admin.email !== email) {
+//         return res.status(401).json({ message: "Invalid email or password" });
+//       }
   
-      // Compare the provided password with the hashed password stored in DB
-      const isMatch = await bcrypt.compare(password, admin.password);
-      if (!isMatch) {
-        return res.status(401).json({ message: "Invalid email or password" });
-      }
+//       // Compare the provided password with the hashed password stored in DB
+//       const isMatch = await bcrypt.compare(password, admin.password);
+//       if (!isMatch) {
+//         return res.status(401).json({ message: "Invalid email or password" });
+//       }
   
-      // Create a JWT token
-      const token = jwt.sign(
-        { id: admin._id, email: admin.email },
-        process.env.JWT_SECRET,
-        { expiresIn: '1d' }
-      );
+//       // Create a JWT token
+//       const token = jwt.sign(
+//         { id: admin._id, email: admin.email },
+//         process.env.JWT_SECRET,
+//         { expiresIn: '1d' }
+//       );
   
-      res.status(200).json({
-        message: "Login successful",
-        token,
-        adminEmail: admin.email,
-      });
+//       res.status(200).json({
+//         message: "Login successful",
+//         token,
+//         adminEmail: admin.email,
+//       });
   
-    } catch (error) {
-      console.error("Admin login error:", error);
-      res.status(500).json({ message: "Server error" });
-    }
-  };
+//     } catch (error) {
+//       console.error("Admin login error:", error);
+//       res.status(500).json({ message: "Server error" });
+//     }
+//   };
 
 
 const Medicine = require('../models/medicineModel');

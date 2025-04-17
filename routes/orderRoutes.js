@@ -3,5 +3,5 @@ const {placeOrder} = require('../controller/orderController');
 const auth = require('../middleware/auth'); 
 
 const router = express.Router();
-router.post('/placeOrder', auth, placeOrder);  
+router.post('/placeOrder', auth(['user']), placeOrder);  
 module.exports = router;

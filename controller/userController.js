@@ -3,78 +3,118 @@ const bcrypt=require("bcryptjs");
 const jwt= require("jsonwebtoken");
 const nodemailer = require('nodemailer');
 const Order = require("../models/orderModel");
+const DeliveryAgent = require("../models/deliveryAgentModel");
+
+// const register = async (req, res) => {
+//     try {
+//         const {
+//             userName,
+//             email,
+//             password,
+           
+//         } = req.body;
+
+       
+//         if (!userName || !email || !password) {
+//             return res.status(400).send("Please enter all required fields");
+//         }
+
+        
+//         const existingUser = await User.findOne({ email });
+//         if (existingUser) {
+//             return res.status(400).send("User already exists");
+//         }
+
+//         const newUser = new User({
+//                 userName,
+//                 email,
+//                 password, 
+             
+//         });
+
+       
+//         await newUser.save();
+//         res.status(201).json({ user: newUser });
+//     } catch (err) {
+//         console.error(err); 
+//         res.status(400).send("An error occurred");
+//     }
+// };
 
 const register = async (req, res) => {
-    try {
-        const {
-            userName,
-            email,
-            password,
-           
-        } = req.body;
+  try {
+      const {
+          userName,
+          email,
+          password,
+      } = req.body;
 
-       
-        if (!userName || !email || !password) {
-            return res.status(400).send("Please enter all required fields");
-        }
+      if (!userName || !email || !password) {
+          return res.status(400).send("Please enter all required fields");
+      }
 
-        
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(400).send("User already exists");
-        }
+      // Check if email already exists in User model
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+          return res.status(400).send("User already exists");
+      }
 
-        const newUser = new User({
-                userName,
-                email,
-                password, 
-             
-        });
+      // Check if email already exists in DeliveryAgent model
+      const existingAgent = await DeliveryAgent.findOne({ email });
+      if (existingAgent) {
+          return res.status(400).send("Email already registered as a delivery agent");
+      }
 
-       
-        await newUser.save();
-        res.status(201).json({ user: newUser });
-    } catch (err) {
-        console.error(err); 
-        res.status(400).send("An error occurred");
-    }
+      // Create new user
+      const newUser = new User({
+          userName,
+          email,
+          password,
+          role: "user" // 👈 explicitly set role
+      });
+
+      await newUser.save();
+      res.status(201).json({ user: newUser });
+  } catch (err) {
+      console.error(err);
+      res.status(400).send("An error occurred");
+  }
 };
 
-
-const login = async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        const user = await User.findOne({ email });
+// const login = async (req, res) => {
+//     try {
+//         const { email, password } = req.body;
+//         const user = await User.findOne({ email });
         
-        if (!user) {
-            return res.status(400).json({ message: 'User not found' });
-        }
+//         if (!user) {
+//             return res.status(400).json({ message: 'User not found' });
+//         }
 
-        const isValid = await bcrypt.compare(password, user.password);
-        if (!isValid) {
-            return res.status(400).json({ message: 'Invalid password' });
-        }
+//         const isValid = await bcrypt.compare(password, user.password);
+//         if (!isValid) {
+//             return res.status(400).json({ message: 'Invalid password' });
+//         }
 
-        const token = jwt.sign(
-            { userId: user._id }, // Embed _id here
-            process.env.JWT_SECRET,
-            { expiresIn: '1d' }
-          );
+//         const token = jwt.sign(
+//             { userId: user._id }, // Embed _id here
+//             process.env.JWT_SECRET,
+//             { expiresIn: '1d' }
+//           );
 
         
-          res.status(200).json({
-            token,
-            user: {
-                _id: user._id,
-                userName: user.userName,
-                email: user.email
-            }
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(400).json({ message: 'An error occurred' });
-    }
-};
+//           res.status(200).json({
+//             token,
+//             user: {
+//                 _id: user._id,
+//                 userName: user.userName,
+//                 email: user.email
+//             }
+//         });
+//     } catch (err) {
+//         console.error(err);
+//         res.status(400).json({ message: 'An error occurred' });
+//     }
+// };
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
