@@ -7,6 +7,7 @@ const medicineRoutes = require("./routes/medicineRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const deliveryAgentRoutes = require("./routes/deliveryAgentRoutes");
+const loginRoutes = require("./routes/loginRoutes"); 
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use("/api/medicine", medicineRoutes);
 app.use("/api/order", orderRoutes); 
 app.use("/api/admin", adminRoutes);
 app.use("/api/deliveryAgent", deliveryAgentRoutes);
+app.use("/api/auth", loginRoutes);
 
 const PORT = process.env.PORT || 7000;
 app.listen(PORT, () => {
