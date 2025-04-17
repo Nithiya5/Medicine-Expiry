@@ -1,11 +1,10 @@
 const express = require('express');
-const {adminLogin,getApprovedMedicines,getPendingMedicines,rejectMedicine,approveMedicine,getAllOrders,getApprovedOrders,getPendingOrders,assignDeliveryAgent,viewDeliveryAgentApplications,approveDeliveryAgentApplication,rejectDeliveryAgentApplication } = require('../controller/adminController');
+const {getApprovedMedicines,getPendingMedicines,rejectMedicine,approveMedicine,getAllOrders,getApprovedOrders,getPendingOrders,assignDeliveryAgent,viewDeliveryAgentApplications,approveDeliveryAgentApplication,rejectDeliveryAgentApplication } = require('../controller/adminController');
 const auth = require('../middleware/auth');
 
 
 const router = express.Router();
 
-router.post('/login', adminLogin);
 router.get('/medicines/pending',auth(['admin']), getPendingMedicines);
 router.put('/medicines/approve/:id',auth(['admin']), approveMedicine);
 router.delete('/medicines/reject/:id',auth(['admin']), rejectMedicine);
