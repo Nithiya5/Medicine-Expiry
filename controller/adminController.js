@@ -329,7 +329,6 @@ module.exports = {
   approveMedicine,
   rejectMedicine,
   getApprovedMedicines,
-  adminLogin,
   getApprovedOrders,
   getPendingOrders,
     getAllOrders,

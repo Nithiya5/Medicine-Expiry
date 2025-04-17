@@ -1,6 +1,6 @@
-const User = require('../models/User');
-const Admin = require('../models/Admin');
-const DeliveryAgent = require('../models/DeliveryAgent');
+const User = require('../models/userModel');
+const Admin = require('../models/adminModel');
+const DeliveryAgent = require('../models/deliveryAgentModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 

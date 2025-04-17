@@ -165,4 +165,4 @@ const confirmDelivery = async(req, res) => {
 
 
 
-module.exports={register , login,confirmDelivery};
+module.exports={register ,confirmDelivery};
