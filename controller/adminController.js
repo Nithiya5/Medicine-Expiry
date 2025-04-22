@@ -170,6 +170,101 @@ const getApprovedOrders = async (req, res) => {
   }
 };
 
+const multer = require('multer');
+const streamifier = require('streamifier');
+const cloudinary = require('cloudinary').v2;
+
+// Cloudinary config
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Multer setup
+const storage = multer.memoryStorage();
+const upload = multer({ storage }).single('file');
+
+// Edit controller
+const editMedicine = async (req, res) => {
+  try {
+    const {
+      name,
+      expiryDate,
+      manufactureDate,
+      chemicalContent,
+      quantity,
+      drugLicense,
+      category,
+      price
+    } = req.body;
+
+    const updateFields = {
+      name,
+      expiryDate,
+      manufactureDate,
+      chemicalContent,
+      quantity,
+      drugLicense,
+      category,
+      price,
+      status: 'Approved'  // Admin keeps it as approved
+    };
+
+    // Image upload (if provided)
+    if (req.file && req.file.buffer) {
+      const streamUpload = () => {
+        return new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream((error, result) => {
+            if (result) resolve(result);
+            else reject(error);
+          });
+          streamifier.createReadStream(req.file.buffer).pipe(stream);
+        });
+      };
+
+      const result = await streamUpload();
+      updateFields.imageUrl = result.secure_url;
+    }
+
+    const updatedMedicine = await Medicine.findByIdAndUpdate(
+      req.params.id,
+      updateFields,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedMedicine) {
+      return res.status(404).json({ message: 'Medicine not found' });
+    }
+
+    res.status(200).json({
+      message: 'Medicine updated successfully',
+      medicine: updatedMedicine
+    });
+
+  } catch (error) {
+    console.error('Error editing medicine:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+const deleteMedicine = async (req, res) => {
+  const { medicineId } = req.params;
+
+  try {
+    const deletedMedicine = await Medicine.findByIdAndDelete(medicineId);
+
+    if (!deletedMedicine) {
+      return res.status(404).json({ message: 'Medicine not found' });
+    }
+
+    res.status(200).json({ message: 'Medicine deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting medicine:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 // Get all orders with status "Pending"
 const getPendingOrders = async (req, res) => {
   try {
@@ -381,5 +476,7 @@ module.exports = {
     rejectDeliveryAgentApplication,
     assignOrderToAgent,
     registerAdmin
+    ,editMedicine,
+    deleteMedicine,
 };
 

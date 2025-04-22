@@ -1,6 +1,11 @@
 const express = require('express');
-const {registerAdmin,getApprovedMedicines,getPendingMedicines,rejectMedicine,approveMedicine,getAllOrders,getApprovedOrders,getPendingOrders,assignDeliveryAgent,viewDeliveryAgentApplications,approveDeliveryAgentApplication,rejectDeliveryAgentApplication } = require('../controller/adminController');
+const {registerAdmin,getApprovedMedicines,getPendingMedicines,rejectMedicine,approveMedicine,getAllOrders,getApprovedOrders,getPendingOrders,assignDeliveryAgent,viewDeliveryAgentApplications,approveDeliveryAgentApplication,rejectDeliveryAgentApplication,editMedicine,deleteMedicine } = require('../controller/adminController');
 const auth = require('../middleware/auth');
+
+const multer = require('multer');
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage }).single('file');
 
 
 const router = express.Router();
@@ -17,5 +22,7 @@ router.get('/orders/all',auth(['admin']), getAllOrders);
 router.get('/deliveryAgent/applications',auth(['admin']), viewDeliveryAgentApplications);
 router.post('/applications/:id/approve', auth(['admin']),approveDeliveryAgentApplication);
 router.post('/applications/:id/reject',auth(['admin']), rejectDeliveryAgentApplication);
+router.put('/medicine/:medicineId',auth(['admin']),upload, editMedicine);
+router.delete('/medicine/:medicineId',auth(['admin']), deleteMedicine);
 
 module.exports = router;
