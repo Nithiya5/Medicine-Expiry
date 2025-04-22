@@ -84,14 +84,14 @@ const getMedicineByCategory = async (req, res) => {
   }
 };
 
-const getAllMedicine = async (req, res) => {
-  try {
-    const medicines = await Medicine.find();
-    res.json(medicines);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+// const getAllMedicine = async (req, res) => {
+//   try {
+//     const medicines = await Medicine.find();
+//     res.json(medicines);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
 
 const getOneMedicine = async (req, res) => {
   try {
@@ -246,4 +246,4 @@ const removeFromCart = async (req, res) => {
 };
 
 
-module.exports = {addMedicine, getAllMedicine,getOneMedicine,updateMedicine,deleteById,getMedicinesByUser,getMedicineByCategory,addToCart,removeFromCart};
+module.exports = {addMedicine,getOneMedicine,updateMedicine,deleteById,getMedicinesByUser,getMedicineByCategory,addToCart,removeFromCart};

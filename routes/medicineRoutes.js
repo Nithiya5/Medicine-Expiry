@@ -1,5 +1,5 @@
 const express = require('express');
-const { addMedicine,getAllMedicine,  getOneMedicine, updateMedicine, deleteById, getMedicinesByUser,getMedicineByCategory,removeFromCart,addToCart,getP } = require('../controller/medicineController');
+const { addMedicine,  getOneMedicine, updateMedicine, deleteById, getMedicinesByUser,getMedicineByCategory,removeFromCart,addToCart } = require('../controller/medicineController');
 const auth = require('../middleware/auth');
 const multer = require('multer');
 
@@ -9,23 +9,31 @@ const upload = multer({ storage }).single('file');
 const router = express.Router();
 
 
-router.post('/add/:userId',auth(['user']), addMedicine);
 
-router.get('/getAll',auth(['user', 'admin']), getAllMedicine);
+// ✅ Add a new medicine donation/sale listing by a user
+router.post('/add/:userId', auth(['user']), addMedicine);
 
-router.get('/getOne/:id',auth(['user', 'admin']), getOneMedicine);
 
-router.get('/donorMedicine/:userId', auth(['user']), getMedicinesByUser); 
+// ✅ Get details of a specific medicine by its ID(DONOR)
+router.get('/getOne/:id', auth(['user', 'admin']), getOneMedicine);
 
-router.get('/categoryMedicine',auth(['user','admin']),getMedicineByCategory); 
+// ✅ Get all medicines listed by a specific user (donor view)
+router.get('/donorMedicine/:userId', auth(['user']), getMedicinesByUser);
 
-router.put('/update/:id', auth(['user']),upload,updateMedicine);
+// ✅ Filter and get medicines based on their category
+router.get('/categoryMedicine', auth(['user', 'admin']), getMedicineByCategory);
 
-router.delete('/delete/:id',auth(['user']), deleteById);
+// ✅ Update details of a medicine listed by the user (including image if provided) By Donor
+router.put('/update/:id', auth(['user']), upload, updateMedicine);
 
-router.delete('/removeFromCart/:id',auth(['user']),removeFromCart);
+// ✅ Delete a specific medicine listed by the user (By Donor)
+router.delete('/delete/:id', auth(['user']), deleteById);
 
-router.put('/addToCart',auth(['user']),addToCart);
+// ✅ Remove a specific medicine from the user's cart(By Buyer)
+router.delete('/removeFromCart/:id', auth(['user']), removeFromCart);
+
+// ✅ Add or update a medicine in the user's cart with selected quantity
+router.put('/addToCart', auth(['user']), addToCart);
 
 
 module.exports = router;
