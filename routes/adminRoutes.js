@@ -1,5 +1,5 @@
 const express = require('express');
-const {registerAdmin,getApprovedMedicines,getPendingMedicines,rejectMedicine,approveMedicine,getAllOrders,getApprovedOrders,getPendingOrders,assignDeliveryAgent,viewDeliveryAgentApplications,approveDeliveryAgentApplication,rejectDeliveryAgentApplication,editMedicine,deleteMedicine,getAvailableDeliveryAgent } = require('../controller/adminController');
+const {registerAdmin,getApprovedMedicines,getPendingMedicines,rejectMedicine,approveMedicine,getAllOrders,getApprovedOrders,getPendingOrders,assignDeliveryAgent,viewDeliveryAgentApplications,approveDeliveryAgentApplication,rejectDeliveryAgentApplication,editMedicine,deleteMedicine,getAvailableDeliveryAgents } = require('../controller/adminController');
 const auth = require('../middleware/auth');
 
 const multer = require('multer');
@@ -24,7 +24,7 @@ router.post('/applications/:id/approve', auth(['admin']),approveDeliveryAgentApp
 router.post('/applications/:id/reject',auth(['admin']), rejectDeliveryAgentApplication);
 router.put('/medicine/:id',auth(['admin']),upload, editMedicine);
 router.delete('/medicine/:id',auth(['admin']), deleteMedicine);
-router.get('/available-agents/:orderId', auth(['admin']), getAvailableDeliveryAgent);
+router.get('/available-agents/:orderId', auth(['admin']), getAvailableDeliveryAgents);
 
 
 module.exports = router;

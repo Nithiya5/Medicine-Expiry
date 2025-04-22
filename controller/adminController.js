@@ -249,10 +249,10 @@ const editMedicine = async (req, res) => {
 };
 
 const deleteMedicine = async (req, res) => {
-  const { medicineId } = req.params;
+  const { id } = req.params;
 
   try {
-    const deletedMedicine = await Medicine.findByIdAndDelete(medicineId);
+    const deletedMedicine = await Medicine.findByIdAndDelete(id);
 
     if (!deletedMedicine) {
       return res.status(404).json({ message: 'Medicine not found' });
