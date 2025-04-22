@@ -293,6 +293,29 @@ const getAllOrders = async (req, res) => {
   }
 };
 
+const getAvailableDeliveryAgents = async (req, res) => {
+  try {
+    const { orderId } = req.params;  // Assuming orderId is passed in the URL
+
+    // Fetch available agents who have not rejected the specified order
+    const availableAgents = await DeliveryAgent.find({
+      isAvailable: true,  // Agents should be available
+      status: 'approved', // Optional: Ensure the agent is approved
+      rejectedOrders: { $ne: orderId }, // Ensure the agent hasn't rejected this order
+    });
+
+    if (availableAgents.length === 0) {
+      return res.status(404).json({ message: 'No available agents for this order' });
+    }
+
+    res.status(200).json(availableAgents);
+  } catch (error) {
+    console.error('Error fetching available agents:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
 // Assign a delivery agent to an order and update its status
 const assignDeliveryAgent = async (req, res) => {
   try {
@@ -478,5 +501,6 @@ module.exports = {
     registerAdmin
     ,editMedicine,
     deleteMedicine,
+    getAvailableDeliveryAgents
 };
 
