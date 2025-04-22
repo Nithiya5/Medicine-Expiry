@@ -22,8 +22,8 @@ router.get('/orders/all',auth(['admin']), getAllOrders);
 router.get('/deliveryAgent/applications',auth(['admin']), viewDeliveryAgentApplications);
 router.post('/applications/:id/approve', auth(['admin']),approveDeliveryAgentApplication);
 router.post('/applications/:id/reject',auth(['admin']), rejectDeliveryAgentApplication);
-router.put('/medicine/:medicineId',auth(['admin']),upload, editMedicine);
-router.delete('/medicine/:medicineId',auth(['admin']), deleteMedicine);
+router.put('/medicine/:id',auth(['admin']),upload, editMedicine);
+router.delete('/medicine/:id',auth(['admin']), deleteMedicine);
 router.get('/available-agents/:orderId', auth(['admin']), getAvailableDeliveryAgent);
 
 
