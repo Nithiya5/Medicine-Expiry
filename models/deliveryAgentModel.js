@@ -1,3 +1,4 @@
+
 // const mongoose = require('mongoose');
 // const { v4: uuidv4 } = require('uuid');
 
@@ -24,13 +25,12 @@
 //     required: true,
 //   },
 
-//   // Identity & Vehicle Details
 //   licenseNumber: {
 //     type: String,
 //     required: true,
 //   },
 //   licensePhotoUrl: {
-//     type: String, // Image URL for license photo
+//     type: String, 
 //     required: true,
 //   },
 //   vehicle: {
@@ -45,10 +45,10 @@
 //     },
 //   },
 //   idProofUrl: {
-//     type: String, // Image URL for uploaded ID (like Aadhar, Passport)
+//     type: String, 
 //   },
 //   profilePhotoUrl: {
-//     type: String, // Agent’s personal photo
+//     type: String, 
 //     required: true,
 //   },
 
@@ -70,7 +70,13 @@
 
 //   password: {
 //     type: String,
-//     default:null
+//     default: null,
+//   },
+
+//   role: {
+//     type: String,
+//     enum: ['deliveryAgent'],
+//     default: 'deliveryAgent',
 //   },
 
 //   createdAt: {
@@ -80,7 +86,6 @@
 // });
 
 // module.exports = mongoose.model('DeliveryAgent', DeliveryAgentSchema);
-
 
 const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
@@ -107,7 +112,6 @@ const DeliveryAgentSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-
   licenseNumber: {
     type: String,
     required: true,
@@ -134,34 +138,32 @@ const DeliveryAgentSchema = new mongoose.Schema({
     type: String, 
     required: true,
   },
-
   status: {
     type: String,
     enum: ['pending', 'approved', 'rejected'],
     default: 'pending',
   },
-
   assignedOrders: [{
     type: String,
     ref: 'Order',
   }],
-
+  rejectedOrders: [{               // ✅ New field added here
+    type: String,
+    ref: 'Order',
+  }],
   isAvailable: {
     type: Boolean,
     default: true,
   },
-
   password: {
     type: String,
     default: null,
   },
-
   role: {
     type: String,
     enum: ['deliveryAgent'],
     default: 'deliveryAgent',
   },
-
   createdAt: {
     type: Date,
     default: Date.now,
@@ -169,3 +171,4 @@ const DeliveryAgentSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('DeliveryAgent', DeliveryAgentSchema);
+

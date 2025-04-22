@@ -3,6 +3,8 @@ const cloudinary = require('cloudinary').v2;
 const streamifier = require('streamifier');
 const multer = require('multer');
 const Order = require('../models/orderModel');
+
+const DeliveryAgent = require('../models/deliveryAgentModel')
 const nodemailer = require('nodemailer');
 const User = require('../models/userModel');
 
@@ -171,6 +173,39 @@ const sendEmail = async (to, subject, text) => {
 
 const adminEmail = process.env.EMAIL_USER || 'admin@example.com';
 
+// const acceptOrder = async (req, res) => {
+//   try {
+//     const { agentId, orderId } = req.body;
+
+//     const order = await Order.findById(orderId);
+//     if (!order) return res.status(404).json({ message: 'Order not found' });
+
+//     if (order.deliveryAgentId.toString() !== agentId)
+//       return res.status(403).json({ message: 'Not authorized for this order' });
+
+//     order.status = 'Approved';
+//     await order.save();
+
+//     // Notify user
+//     await sendEmail(
+//       order.email,
+//       'Your Order Is On The Way',
+//       `Hi ${order.name},\n\nYour order #${orderId} has been accepted by our delivery agent and is on the way.\n\nThank you for shopping with us.`
+//     );
+
+//     // Notify admin
+//     await sendEmail(
+//       adminEmail,
+//       'Order Accepted by Delivery Agent',
+//       `Order #${orderId} has been accepted by agent ID ${agentId}.`
+//     );
+
+//     res.status(200).json({ message: 'Order accepted, notifications sent' });
+//   } catch (err) {
+//     res.status(500).json({ message: 'Error accepting order', error: err.message });
+//   }
+// };
+
 const acceptOrder = async (req, res) => {
   try {
     const { agentId, orderId } = req.body;
@@ -181,28 +216,39 @@ const acceptOrder = async (req, res) => {
     if (order.deliveryAgentId.toString() !== agentId)
       return res.status(403).json({ message: 'Not authorized for this order' });
 
+    // Update order status
     order.status = 'Approved';
     await order.save();
+
+    // Fetch delivery agent
+    const agent = await DeliveryAgent.findById(agentId);
+    if (!agent) return res.status(404).json({ message: 'Delivery agent not found' });
+
+    // Set agent availability to false
+    agent.isAvailable = false;
+    await agent.save();
 
     // Notify user
     await sendEmail(
       order.email,
       'Your Order Is On The Way',
-      `Hi ${order.name},\n\nYour order #${orderId} has been accepted by our delivery agent and is on the way.\n\nThank you for shopping with us.`
+      `Hi ${order.name},\n\nYour order #${orderId} has been accepted by our delivery agent ${agent.fullName} and is on the way.\n\nThank you for shopping with us.`
     );
 
     // Notify admin
     await sendEmail(
       adminEmail,
       'Order Accepted by Delivery Agent',
-      `Order #${orderId} has been accepted by agent ID ${agentId}.`
+      `Order #${orderId} has been accepted by agent ${agent.fullName} (ID: ${agentId}).`
     );
 
-    res.status(200).json({ message: 'Order accepted, notifications sent' });
+    res.status(200).json({ message: 'Order accepted, notifications sent, agent marked unavailable' });
   } catch (err) {
+    console.error('Error in acceptOrder:', err);
     res.status(500).json({ message: 'Error accepting order', error: err.message });
   }
 };
+
 
 const rejectOrder = async (req, res) => {
   try {
@@ -214,9 +260,16 @@ const rejectOrder = async (req, res) => {
     if (order.deliveryAgentId.toString() !== agentId)
       return res.status(403).json({ message: 'Not authorized for this order' });
 
+    // Update order status and unassign the agent
     order.status = 'Rejected';
     order.deliveryAgentId = null;
     await order.save();
+
+    // Add orderId to agent's rejectedOrders array
+    await DeliveryAgent.findByIdAndUpdate(
+      agentId,
+      { $addToSet: { rejectedOrders: orderId } } // Prevent duplicates
+    );
 
     // Notify admin with reason
     await sendEmail(
@@ -244,18 +297,21 @@ const confirmDelivery = async (req, res) => {
     // Generate front‑end confirmation link
     const confirmationLink = `${process.env.APP_URL}/confirm-delivery/${orderId}`;
 
+    // Send confirmation email to user
     await sendEmail(
       order.email,
       'Please Confirm Your Delivery',
       `Hi ${order.name},\n\nYour delivery is marked as delivered by our agent.\nPlease confirm receipt by clicking the link below:\n\n${confirmationLink}\n\nThank you!`
     );
 
-    res.status(200).json({ message: 'Confirmation email sent to user' });
+    // Set agent availability to true
+    await DeliveryAgent.findByIdAndUpdate(agentId, { isAvailable: true });
+
+    res.status(200).json({ message: 'Confirmation email sent to user and agent marked available' });
   } catch (err) {
     res.status(500).json({ message: 'Error sending confirmation email', error: err.message });
   }
 };
-
 
 
 module.exports = {
