@@ -3,8 +3,6 @@ const cloudinary = require('cloudinary').v2;
 const streamifier = require('streamifier');
 const multer = require('multer');
 const Order = require('../models/orderModel');
-
-const DeliveryAgent = require('../models/deliveryAgentModel')
 const nodemailer = require('nodemailer');
 const User = require('../models/userModel');
 

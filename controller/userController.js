@@ -53,19 +53,16 @@ const register = async (req, res) => {
           return res.status(400).send("Please enter all required fields");
       }
 
-      // Check if email already exists in User model
       const existingUser = await User.findOne({ email });
       if (existingUser) {
           return res.status(400).send("User already exists");
       }
 
-      // Check if email already exists in DeliveryAgent model
       const existingAgent = await DeliveryAgent.findOne({ email });
       if (existingAgent) {
           return res.status(400).send("Email already registered as a delivery agent");
       }
 
-      // Create new user
       const newUser = new User({
           userName,
           email,
