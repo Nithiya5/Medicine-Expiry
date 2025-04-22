@@ -45,6 +45,49 @@ const Order = require('../models/orderModel');
 //     }
 //   };
 
+const registerAdmin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    // Check if admin already exists
+    const existingAdmin = await Admin.findOne({ email });
+    if (existingAdmin) {
+      return res.status(400).json({ message: 'Admin already exists' });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create admin
+    const newAdmin = new Admin({
+      email,
+      password: hashedPassword,
+    });
+
+    await newAdmin.save();
+
+    res.status(201).json({
+      message: 'Admin registered successfully',
+      admin: {
+        id: newAdmin._id,
+        email: newAdmin.email,
+        role: newAdmin.role,
+      },
+    });
+
+  } catch (err) {
+    console.error('Error registering admin:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
 
 const Medicine = require('../models/medicineModel');
 
@@ -336,6 +379,7 @@ module.exports = {
     viewDeliveryAgentApplications,
     approveDeliveryAgentApplication,
     rejectDeliveryAgentApplication,
-    assignOrderToAgent
+    assignOrderToAgent,
+    registerAdmin
 };
 
