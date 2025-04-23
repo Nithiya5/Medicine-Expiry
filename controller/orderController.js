@@ -141,16 +141,20 @@ const Order = require('../models/orderModel');
 
 const placeOrder = async (req, res) => {
   try {
-    const { userId, name, phoneNo, email, address } = req.body;
+    const { userId, selectedCartItemIds, name, phoneNo, email, address } = req.body;
 
-    const cartItems = await Cart.find({ userId });
-
-    if (cartItems.length === 0) {
-      return res.status(400).json({ message: 'Your cart is empty' });
+    if (!selectedCartItemIds || selectedCartItemIds.length === 0) {
+      return res.status(400).json({ message: 'No cart items selected for ordering' });
     }
 
-    // Validate stock and calculate prices
-    const orders = await Promise.all(cartItems.map(async (cartItem) => {
+    const cartItems = await Cart.find({ _id: { $in: selectedCartItemIds }, userId });
+
+    if (cartItems.length === 0) {
+      return res.status(400).json({ message: 'Selected cart items not found' });
+    }
+
+    // Validate stock and prepare items array
+    const items = await Promise.all(cartItems.map(async (cartItem) => {
       const medicine = await Medicine.findById(cartItem.medicineId);
       if (!medicine) {
         throw new Error(`Medicine not found for ID: ${cartItem.medicineId}`);
@@ -160,39 +164,75 @@ const placeOrder = async (req, res) => {
         throw new Error(`Not enough stock for ${medicine.name}. Available: ${medicine.quantity}`);
       }
 
-      const totalPrice = medicine.price * cartItem.quantity;
-
       return {
-        userId,
-        medicineId: cartItem.medicineId,
+        medicineId: medicine._id,
         medicineName: medicine.name,
-        quantity: cartItem.quantity, // ✅ from cart
-        price: totalPrice,           // ✅ price * quantity
-        status: 'Pending',
-        name,
-        phoneNo,
-        email,
-        address
+        quantity: cartItem.quantity,
+        price: medicine.price * cartItem.quantity
       };
     }));
 
-    const createdOrders = await Order.insertMany(orders);
+    // Calculate the grand total price
+    const grandTotal = items.reduce((total, item) => total + item.price, 0);
 
-    // Update stock after order placement
-    for (const order of createdOrders) {
-      await Medicine.findByIdAndUpdate(order.medicineId, {
-        $inc: { quantity: -order.quantity }
+    // Create a single order document with all selected items
+    const order = new Order({
+      userId,
+      items,
+      name,
+      phoneNo,
+      email,
+      address,
+      status: 'Pending',
+      grandTotal // Store the grand total
+    });
+
+    await order.save();
+
+    // Update stock for each medicine
+    for (const item of items) {
+      await Medicine.findByIdAndUpdate(item.medicineId, {
+        $inc: { quantity: -item.quantity }
       });
     }
 
-    // Clear cart after successful order
-    await Cart.deleteMany({ userId });
+    // Remove ordered items from cart
+    await Cart.deleteMany({ _id: { $in: selectedCartItemIds } });
 
-    res.status(201).json({ message: 'Order placed successfully', orders: createdOrders });
+    res.status(201).json({ message: 'Selected items ordered successfully', order });
+
   } catch (error) {
     console.error('Error placing order:', error.message);
     res.status(500).json({ error: error.message || 'Internal server error' });
   }
 };
 
-module.exports = { placeOrder };
+const getOrderHistory = async (req, res) => {
+  try {
+    const { userId } = req.params; // Get the userId from the request params
+
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required to fetch orders' });
+    }
+
+    // Fetch orders where the userId matches and the status is "Delivered"
+    const pastOrders = await Order.find({
+      userId,
+      status: 'Delivered'
+    }).populate('items.medicineId', 'name price') // Optionally populate the medicine details (name and price)
+      .sort({ createdAt: -1 }); // Sort by most recent orders first
+
+    if (pastOrders.length === 0) {
+      return res.status(404).json({ message: 'No past orders found for this user' });
+    }
+
+    // Return the past orders to the user
+    res.status(200).json({ message: 'Past orders retrieved successfully', pastOrders });
+  } catch (error) {
+    console.error('Error retrieving past orders:', error.message);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+};
+
+
+module.exports = { placeOrder,getOrderHistory};
