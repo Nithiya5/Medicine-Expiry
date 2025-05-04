@@ -1,5 +1,5 @@
 const express = require('express');
-const { addMedicine,  getOneMedicine, updateMedicine, deleteById, getMedicinesByUser,getMedicineByCategory,removeFromCart,addToCart } = require('../controller/medicineController');
+const { addMedicine,  getOneMedicine, updateMedicine, deleteById, getMedicinesByUser,getMedicineByCategory,removeFromCart,addToCart,getCart } = require('../controller/medicineController');
 const auth = require('../middleware/auth');
 const multer = require('multer');
 
@@ -34,6 +34,9 @@ router.delete('/removeFromCart/:id', auth(['user']), removeFromCart);
 
 // ✅ Add or update a medicine in the user's cart with selected quantity
 router.put('/addToCart', auth(['user']), addToCart);
+
+router.get('/cart', auth(['user']), getCart);
+
 
 
 module.exports = router;
