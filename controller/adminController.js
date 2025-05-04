@@ -6,6 +6,13 @@ const nodemailer = require('nodemailer');
 const mongoose = require('mongoose');
 const Order = require('../models/orderModel'); 
 
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
 
 const registerAdmin = async (req, res) => {
   try {

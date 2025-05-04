@@ -107,7 +107,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendEmail = async (to, subject, text) => {
-  const mailOptions = { from: process.env.GMAIL_USER, to, subject, text };
+  const mailOptions = { from: process.env.EMAIL_USER, to, subject, text };
   try {
     const info = await transporter.sendMail(mailOptions);
     console.log(`✔ Email sent: ${info.response}`);
