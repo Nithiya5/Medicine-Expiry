@@ -74,7 +74,7 @@ const orderSchema = new mongoose.Schema({
     }
   ],
   deliveryAgentId: { 
-    type: mongoose.Schema.Types.ObjectId, 
+    type: String, 
     ref: 'DeliveryAgent', 
     default: null 
   },

@@ -3,6 +3,7 @@ const Admin = require('../models/adminModel');
 const bcrypt = require('bcrypt');
 const DeliveryAgent = require('../models/deliveryAgentModel');
 const nodemailer = require('nodemailer'); 
+const mongoose = require('mongoose');
 const Order = require('../models/orderModel'); 
 
 // const adminLogin = async (req, res) => {
@@ -338,37 +339,40 @@ const assignDeliveryAgent = async (req, res) => {
     const { orderId } = req.params;
     const { deliveryAgentId } = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      return res.status(400).json({ message: 'Invalid order ID' });
+    }
+
     if (!deliveryAgentId) {
       return res.status(400).json({ message: 'Delivery Agent ID is required' });
     }
 
-    // Update the order by assigning the delivery agent and updating the status
     const updatedOrder = await Order.findByIdAndUpdate(
       orderId,
-      { deliveryAgentId, status: 'Approved' },
-      { new: true, runValidators: true }
+      {
+        deliveryAgentId, // UUID string is fine here
+        status: 'Approved'
+      },
+      {
+        new: true,
+        runValidators: true
+      }
     );
 
     if (!updatedOrder) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    res.status(200).json({ message: 'Delivery agent assigned successfully', order: updatedOrder });
+    res.status(200).json({
+      message: 'Delivery agent assigned successfully',
+      order: updatedOrder
+    });
   } catch (error) {
     console.error('Error updating order:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
 
-
-// Nodemailer transporter setup
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
 
 // Utility function to send emails
 const sendEmail = async (recipient, subject, message) => {
