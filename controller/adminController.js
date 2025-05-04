@@ -312,7 +312,7 @@ const assignDeliveryAgent = async (req, res) => {
       orderId,
       {
         deliveryAgentId, // UUID string is fine here
-        status: 'Approved'
+        status: 'Assigned'
       },
       {
         new: true,

@@ -147,35 +147,35 @@ const placeOrder = async (req, res) => {
       return res.status(400).json({ message: 'No cart items selected for ordering' });
     }
 
-    const cartItems = await Cart.find({ _id: { $in: selectedCartItemIds }, userId });
+    const items = await Promise.all(selectedCartItemIds.map(async (cartItem) => {
+      const cartDoc = await Cart.findOne({ _id: cartItem._id, userId });
 
-    if (cartItems.length === 0) {
-      return res.status(400).json({ message: 'Selected cart items not found' });
-    }
-
-    // Validate stock and prepare items array
-    const items = await Promise.all(cartItems.map(async (cartItem) => {
-      const medicine = await Medicine.findById(cartItem.medicineId);
-      if (!medicine) {
-        throw new Error(`Medicine not found for ID: ${cartItem.medicineId}`);
+      if (!cartDoc) {
+        throw new Error(`Cart item not found for ID: ${cartItem._id}`);
       }
 
-      if (cartItem.quantity > medicine.quantity) {
+      const medicine = await Medicine.findById(cartDoc.medicineId);
+
+      if (!medicine) {
+        throw new Error(`Medicine not found for ID: ${cartDoc.medicineId}`);
+      }
+
+      const requestedQuantity = cartItem.quantity;
+
+      if (requestedQuantity > medicine.quantity) {
         throw new Error(`Not enough stock for ${medicine.name}. Available: ${medicine.quantity}`);
       }
 
       return {
         medicineId: medicine._id,
         medicineName: medicine.name,
-        quantity: cartItem.quantity,
-        price: medicine.price * cartItem.quantity
+        quantity: requestedQuantity,
+        price: medicine.price * requestedQuantity
       };
     }));
 
-    // Calculate the grand total price
     const grandTotal = items.reduce((total, item) => total + item.price, 0);
 
-    // Create a single order document with all selected items
     const order = new Order({
       userId,
       items,
@@ -184,20 +184,20 @@ const placeOrder = async (req, res) => {
       email,
       address,
       status: 'Pending',
-      grandTotal // Store the grand total
+      grandTotal
     });
 
     await order.save();
 
-    // Update stock for each medicine
+    // Decrement stock
     for (const item of items) {
       await Medicine.findByIdAndUpdate(item.medicineId, {
         $inc: { quantity: -item.quantity }
       });
     }
 
-    // Remove ordered items from cart
-    await Cart.deleteMany({ _id: { $in: selectedCartItemIds } });
+    // Remove cart items
+    await Cart.deleteMany({ _id: { $in: selectedCartItemIds.map(item => item._id) } });
 
     res.status(201).json({ message: 'Selected items ordered successfully', order });
 
