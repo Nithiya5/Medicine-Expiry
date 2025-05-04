@@ -32,57 +32,6 @@ const streamUpload = (buffer) => {
   });
 };
 
-// const addDeliveryAgent = async (req, res) => {
-//   upload(req, res, async (err) => {
-//     if (err) {
-//       console.error('Multer error:', err);
-//       return res.status(400).json({ error: 'File upload error' });
-//     }
-
-//     try {
-//       const {
-//         fullName,
-//         email,
-//         phone,
-//         address,
-//         licenseNumber,
-//         vehicleType,
-//         registrationNumber
-//       } = req.body;
-
-//       const profileBuffer = req.files['profilePhoto']?.[0]?.buffer;
-//       const licenseBuffer = req.files['licensePhoto']?.[0]?.buffer;
-
-//       if (!profileBuffer || !licenseBuffer) {
-//         return res.status(400).json({ error: 'Both profile and license photos are required.' });
-//       }
-
-//       const profilePhotoUrl = await streamUpload(profileBuffer);
-//       const licensePhotoUrl = await streamUpload(licenseBuffer);
-
-//       const newAgent = new DeliveryAgent({
-//         fullName,
-//         email,
-//         phone,
-//         address,
-//         licenseNumber,
-//         licensePhotoUrl,
-//         profilePhotoUrl,
-//         vehicle: {
-//           type: vehicleType,
-//           registrationNumber,
-//         },
-//       });
-
-//       await newAgent.save();
-//       res.status(201).json({ message: 'Application submitted successfully', agentId: newAgent._id });
-//     } catch (error) {
-//       console.error('Error applying as delivery agent:', error);
-//       res.status(500).json({ error: 'Internal server error', details: error.message });
-//     }
-//   });
-// };
-
 const addDeliveryAgent = async (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
@@ -171,7 +120,86 @@ const sendEmail = async (to, subject, text) => {
 
 const adminEmail = process.env.EMAIL_USER || 'admin@example.com';
 
+
 // const acceptOrder = async (req, res) => {
+//   try {
+//     const { agentId, orderId } = req.body;
+
+//     const order = await Order.findById(orderId);
+//     if (!order) return res.status(404).json({ message: 'Order not found' });
+
+//     if (order.deliveryAgentId !== agentId)
+//       return res.status(403).json({ message: 'Not authorized for this order' });
+
+//     // Update order status
+//     order.status = 'Approved';
+//     await order.save();
+
+//     // Fetch delivery agent
+//     const agent = await DeliveryAgent.findById(agentId);
+//     if (!agent) return res.status(404).json({ message: 'Delivery agent not found' });
+
+//     // Set agent availability to false
+//     agent.isAvailable = false;
+//     await agent.save();
+
+//     // Notify user
+//     await sendEmail(
+//       order.email,
+//       'Your Order Is On The Way',
+//       `Hi ${order.name},\n\nYour order #${orderId} has been accepted by our delivery agent ${agent.fullName} and is on the way.\n\nThank you for shopping with us.`
+//     );
+
+//     // Notify admin
+//     await sendEmail(
+//       adminEmail,
+//       'Order Accepted by Delivery Agent',
+//       `Order #${orderId} has been accepted by agent ${agent.fullName} (ID: ${agentId}).`
+//     );
+
+//     res.status(200).json({ message: 'Order accepted, notifications sent, agent marked unavailable' });
+//   } catch (err) {
+//     console.error('Error in acceptOrder:', err);
+//     res.status(500).json({ message: 'Error accepting order', error: err.message });
+//   }
+// };
+
+
+// const rejectOrder = async (req, res) => {
+//   try {
+//     const { agentId, orderId, reason } = req.body;
+
+//     const order = await Order.findById(orderId);
+//     if (!order) return res.status(404).json({ message: 'Order not found' });
+
+//     if (order.deliveryAgentId.toString() !== agentId)
+//       return res.status(403).json({ message: 'Not authorized for this order' });
+
+//     // Update order status and unassign the agent
+//     order.status = 'Rejected';
+//     order.deliveryAgentId = null;
+//     await order.save();
+
+//     // Add orderId to agent's rejectedOrders array
+//     await DeliveryAgent.findByIdAndUpdate(
+//       agentId,
+//       { $addToSet: { rejectedOrders: orderId } } // Prevent duplicates
+//     );
+
+//     // Notify admin with reason
+//     await sendEmail(
+//       adminEmail,
+//       'Order Rejected by Delivery Agent',
+//       `Order #${orderId} was rejected by agent ID ${agentId}.\nReason: ${reason}\n\nPlease reassign to another agent.`
+//     );
+
+//     res.status(200).json({ message: 'Order rejected and admin notified' });
+//   } catch (err) {
+//     res.status(500).json({ message: 'Error rejecting order', error: err.message });
+//   }
+// };
+
+// const confirmDelivery = async (req, res) => {
 //   try {
 //     const { agentId, orderId } = req.body;
 
@@ -181,26 +209,22 @@ const adminEmail = process.env.EMAIL_USER || 'admin@example.com';
 //     if (order.deliveryAgentId.toString() !== agentId)
 //       return res.status(403).json({ message: 'Not authorized for this order' });
 
-//     order.status = 'Approved';
-//     await order.save();
+//     // Generate front‑end confirmation link
+//     const confirmationLink = `${process.env.APP_URL}/confirm-delivery/${orderId}`;
 
-//     // Notify user
+//     // Send confirmation email to user
 //     await sendEmail(
 //       order.email,
-//       'Your Order Is On The Way',
-//       `Hi ${order.name},\n\nYour order #${orderId} has been accepted by our delivery agent and is on the way.\n\nThank you for shopping with us.`
+//       'Please Confirm Your Delivery',
+//       `Hi ${order.name},\n\nYour delivery is marked as delivered by our agent.\nPlease confirm receipt by clicking the link below:\n\n${confirmationLink}\n\nThank you!`
 //     );
 
-//     // Notify admin
-//     await sendEmail(
-//       adminEmail,
-//       'Order Accepted by Delivery Agent',
-//       `Order #${orderId} has been accepted by agent ID ${agentId}.`
-//     );
+//     // Set agent availability to true
+//     await DeliveryAgent.findByIdAndUpdate(agentId, { isAvailable: true });
 
-//     res.status(200).json({ message: 'Order accepted, notifications sent' });
+//     res.status(200).json({ message: 'Confirmation email sent to user and agent marked available' });
 //   } catch (err) {
-//     res.status(500).json({ message: 'Error accepting order', error: err.message });
+//     res.status(500).json({ message: 'Error sending confirmation email', error: err.message });
 //   }
 // };
 
@@ -208,18 +232,20 @@ const acceptOrder = async (req, res) => {
   try {
     const { agentId, orderId } = req.body;
 
+    // Fetch the order by ID
     const order = await Order.findById(orderId);
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
-    if (order.deliveryAgentId.toString() !== agentId)
+    // Check if the agent is authorized for the order
+    if (order.deliveryAgentId !== agentId)
       return res.status(403).json({ message: 'Not authorized for this order' });
 
     // Update order status
     order.status = 'Approved';
     await order.save();
 
-    // Fetch delivery agent
-    const agent = await DeliveryAgent.findById(agentId);
+    // Fetch delivery agent using UUID (findOne is used for UUID-based query)
+    const agent = await DeliveryAgent.findOne({ _id: agentId });
     if (!agent) return res.status(404).json({ message: 'Delivery agent not found' });
 
     // Set agent availability to false
@@ -247,15 +273,16 @@ const acceptOrder = async (req, res) => {
   }
 };
 
-
 const rejectOrder = async (req, res) => {
   try {
     const { agentId, orderId, reason } = req.body;
 
+    // Fetch the order by ID
     const order = await Order.findById(orderId);
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
-    if (order.deliveryAgentId.toString() !== agentId)
+    // Check if the agent is authorized for the order
+    if (order.deliveryAgentId !== agentId)
       return res.status(403).json({ message: 'Not authorized for this order' });
 
     // Update order status and unassign the agent
@@ -263,9 +290,9 @@ const rejectOrder = async (req, res) => {
     order.deliveryAgentId = null;
     await order.save();
 
-    // Add orderId to agent's rejectedOrders array
-    await DeliveryAgent.findByIdAndUpdate(
-      agentId,
+    // Add orderId to agent's rejectedOrders array using findOneAndUpdate for UUID
+    await DeliveryAgent.findOneAndUpdate(
+      { _id: agentId },
       { $addToSet: { rejectedOrders: orderId } } // Prevent duplicates
     );
 
@@ -286,10 +313,12 @@ const confirmDelivery = async (req, res) => {
   try {
     const { agentId, orderId } = req.body;
 
+    // Fetch the order by ID
     const order = await Order.findById(orderId);
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
-    if (order.deliveryAgentId.toString() !== agentId)
+    // Check if the agent is authorized for the order
+    if (order.deliveryAgentId !== agentId)
       return res.status(403).json({ message: 'Not authorized for this order' });
 
     // Generate front‑end confirmation link
@@ -303,13 +332,14 @@ const confirmDelivery = async (req, res) => {
     );
 
     // Set agent availability to true
-    await DeliveryAgent.findByIdAndUpdate(agentId, { isAvailable: true });
+    await DeliveryAgent.findOneAndUpdate({ _id: agentId }, { isAvailable: true });
 
     res.status(200).json({ message: 'Confirmation email sent to user and agent marked available' });
   } catch (err) {
     res.status(500).json({ message: 'Error sending confirmation email', error: err.message });
   }
 };
+
 
 
 module.exports = {
