@@ -407,7 +407,7 @@ const viewDeliveryAgentApplications = async (req, res) => {
 const approveDeliveryAgentApplication = async (req, res) => {
   try {
     const { id } = req.params;
-    const agent = await DeliveryAgent.findById(id);
+    const agent = await DeliveryAgent.findOne({ _id: id });  // Use findOne instead of findById
 
     if (!agent) {
       return res.status(404).json({ message: 'Delivery agent application not found' });
@@ -444,11 +444,12 @@ Thank you.`;
   }
 };
 
+
 // Reject application and delete the record
 const rejectDeliveryAgentApplication = async (req, res) => {
   try {
     const { id } = req.params;
-    const agent = await DeliveryAgent.findById(id);
+    const agent = await DeliveryAgent.findOne({ _id: id });  // Use findOne instead of findById
 
     if (!agent) {
       return res.status(404).json({ message: 'Delivery agent application not found' });
@@ -480,16 +481,20 @@ const assignOrderToAgent = async (req, res) => {
     const order = await Order.findById(orderId);
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
-    const agent = await DeliveryAgent.findById(agentId);
+    const agent = await DeliveryAgent.findOne({ _id: agentId });  // Use findOne instead of findById
     if (!agent || agent.status !== 'approved') {
-      return res.status(400).json({ message: 'Invalid or unapproved delivery agent' });
+      return res.status(400).json({ message: 'Agent is invalid or unapproved' });
+    }
+
+    if (!agent.isAvailable) {
+      return res.status(400).json({ message: 'Agent is not available' });
     }
 
     order.deliveryAgentId = agentId;
     order.status = 'Assigned';
     await order.save();
 
-    agent.assignedOrders.push(orderId);
+    agent.assignedOrders.addToSet(orderId); // Prevent duplicate entries
     await agent.save();
 
     // Notify agent
