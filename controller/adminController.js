@@ -157,18 +157,6 @@ const getApprovedMedicines = async (req, res) => {
   }
 };
 
-const getApprovedOrders = async (req, res) => {
-  try {
-    const approvedOrders = await Order.find({ status: 'Approved' })
-      .populate('medicineId')
-      .populate('userId')
-      .sort({ createdAt: -1 });
-    res.status(200).json(approvedOrders);
-  } catch (error) {
-    console.error('Error fetching approved orders:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-};
 
 const multer = require('multer');
 const streamifier = require('streamifier');
@@ -327,6 +315,20 @@ const getAvailableDeliveryAgents = async (req, res) => {
     console.error('Error fetching available agents:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
+};
+
+const getApprovedOrders = async (req, res) => {
+  try {
+    const approvedOrders = await Order.find({ status: 'Approved' })
+      .populate('userId')
+      .populate('items.medicineId') // ✅ Correct nested path
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(approvedOrders);
+  } catch (error) {
+    console.error('Error fetching approved orders:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 };
 
 
