@@ -266,12 +266,26 @@ const deleteMedicine = async (req, res) => {
 };
 
 // Get all orders with status "Pending"
+// const getPendingOrders = async (req, res) => {
+//   try {
+//     const pendingOrders = await Order.find({ status: 'Pending' })
+//       .populate('medicineId')
+//       .populate('userId')
+//       .sort({ createdAt: -1 });
+//     res.status(200).json(pendingOrders);
+//   } catch (error) {
+//     console.error('Error fetching pending orders:', error);
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// };
+
 const getPendingOrders = async (req, res) => {
   try {
     const pendingOrders = await Order.find({ status: 'Pending' })
-      .populate('medicineId')
       .populate('userId')
+      .populate('items.medicineId') // ✅ populate nested field
       .sort({ createdAt: -1 });
+
     res.status(200).json(pendingOrders);
   } catch (error) {
     console.error('Error fetching pending orders:', error);
