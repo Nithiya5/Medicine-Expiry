@@ -295,11 +295,11 @@ const getPendingOrders = async (req, res) => {
 
 const getAllOrders = async (req, res) => {
   try {
-    // Optionally populate related fields like medicineId and userId if needed
     const orders = await Order.find()
-      .populate('medicineId')
       .populate('userId')
+      .populate('items.medicineId') // ✅ Correct nested population
       .sort({ createdAt: -1 });
+
     res.status(200).json(orders);
   } catch (error) {
     console.error('Error fetching orders:', error);
