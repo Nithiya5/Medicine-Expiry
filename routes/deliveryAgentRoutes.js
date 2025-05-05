@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 
-const { addDeliveryAgent,acceptOrder,rejectOrder,confirmDelivery } = require('../controller/deliveryAgentController');
+const { addDeliveryAgent,acceptOrder,rejectOrder,confirmDelivery,getAssignedOrders } = require('../controller/deliveryAgentController');
 
 
 // ✅ Register a new delivery agent(Apply for job)
