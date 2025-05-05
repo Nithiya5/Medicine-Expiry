@@ -17,5 +17,8 @@ router.post('/orders/reject', auth(['deliveryAgent']),rejectOrder);
 // Agent confirms delivery of an order
 router.post('/orders/confirm-delivery', auth(['deliveryAgent']),confirmDelivery);
 
+router.get('/:deliveryAgentId/assignedOrders', auth(['deliveryAgent']), getAssignedOrders);
+
+
 
 module.exports = router;
