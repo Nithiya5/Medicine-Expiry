@@ -30,7 +30,7 @@ router.put('/update/:id', auth(['user']), upload, updateMedicine);
 router.delete('/delete/:id', auth(['user']), deleteById);
 
 // ✅ Remove a specific medicine from the user's cart(By Buyer)
-router.delete('/removeFromCart/:id', auth(['user']), removeFromCart);
+router.delete('/removeFromCart/:userId/:medicineId', auth(['user']), removeFromCart);
 
 // ✅ Add or update a medicine in the user's cart with selected quantity
 router.put('/addToCart', auth(['user']), addToCart);
