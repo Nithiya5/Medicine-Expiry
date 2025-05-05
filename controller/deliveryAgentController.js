@@ -357,11 +357,34 @@ const getAssignedOrders = async (req, res) => {
   }
 };
 
+const getAcceptedOrders = async (req, res) => {
+  try {
+    const { agentId } = req.params;
+
+    // Find all orders assigned to this agent and approved
+    const acceptedOrders = await Order.find({
+      deliveryAgentId: agentId,
+      status: 'Approved',
+    });
+
+    if (acceptedOrders.length === 0) {
+      return res.status(404).json({ message: 'No accepted orders found' });
+    }
+
+    res.status(200).json({ acceptedOrders });
+  } catch (error) {
+    console.error('Error fetching accepted orders:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+};
+
+
 
 module.exports = {
   addDeliveryAgent,
   acceptOrder,
   rejectOrder,
   confirmDelivery,
-  getAssignedOrders
+  getAssignedOrders,
+  getAcceptedOrders
 };
