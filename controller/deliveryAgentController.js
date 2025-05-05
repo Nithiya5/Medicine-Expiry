@@ -344,16 +344,13 @@ const getAssignedOrders = async (req, res) => {
   try {
     const { deliveryAgentId } = req.params;
 
-    const agent = await DeliveryAgent.findById(deliveryAgentId).populate({
-      path: 'assignedOrders',
-      model: 'Order',
-    });
+    const assignedOrders = await Order.find({ deliveryAgentId });
 
-    if (!agent) {
-      return res.status(404).json({ message: 'Delivery agent not found' });
+    if (assignedOrders.length === 0) {
+      return res.status(404).json({ message: 'No assigned orders found' });
     }
 
-    res.status(200).json({ assignedOrders: agent.assignedOrders });
+    res.status(200).json({ assignedOrders });
   } catch (error) {
     console.error('Error fetching assigned orders:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
